@@ -164,3 +164,67 @@ def drawlinesP(imgwithlines,lines):
         x1,y1 = map(int, [c, -(r[2]+r[0]*c)/r[1] ])
         imgwithlines = cv.line(imgwithlines, (x0,y0), (x1,y1), color,1)
     return imgwithlines
+
+def intersection_point(line1, line2):
+    a = np.zeros((2,2))
+    a[0:1,:] = np.array([[line1[0], line1[1]]])
+    a[1:2,:] = np.array([[line2[0], line2[1]]])
+    b = np.zeros([2,1])
+    b[0,0] = np.array(-line1[2])
+    b[1,0] = np.array(-line2[2])
+    try:
+        inter = np.linalg.solve(a,b)
+    except np.linalg.linalg.LinAlgError:
+        inter = None
+    return inter
+
+def ptLocs(inter2d, lines, tol=1e-2): 
+    ptDist = np.zeros((6,6)) # will store data for a pt in rows
+    keys = list(inter2d.keys())
+    vals = []
+    for j in range(len(keys)):
+        key = keys[j]
+        vals.append(inter2d[key])
+        ipt = inter2d[key]
+        for i in range(len(lines)):
+            line = lines[i]
+            # print ('shape', line.shape)
+            # print ('iptshape', ipt.shape, ipt[1], ipt)
+            # sys.exit()
+            d = line[0]*ipt[0] + line[1]*ipt[1] + line[2]
+            if abs(d) < tol:
+                d = 0
+            ptDist[j, i] = d
+    return vals, ptDist
+
+def rem(inter2d):
+    vals = []
+    keys = list(inter2d.keys())
+    for i in range(len(keys)):
+        key = keys[i]
+        if key[0] < 3 and key[1] >= 3:
+            del inter2d[key]
+    return inter2d
+
+def label(img, pts, ptVectors, lines, tol=1):
+    out = np.copy(img)
+    cols, rows, chl = img.shape
+    vector = np.zeros(6)
+    for i in range(cols):
+        for j in range(rows):
+            la = lebely((j, i), lines, vector, tol)
+            # print('shape', ptVectors.shape, la.shape)
+            prodcts = ptVectors*la[:, None]
+            ##### casess sattements here....
+            if np.all(prodcts[0:3,0:3] >= 0):
+                out[i, j] = [0,0,0]
+    return out
+
+def lebely(ipt, lines, vector, tol):
+    for i in range(len(lines)):
+        line = lines[i]
+        d = line[0]*ipt[0] + line[1]*ipt[1] + line[2]
+        if abs(d) < tol:
+                d = 0
+        vector[i] = d
+    return vector
