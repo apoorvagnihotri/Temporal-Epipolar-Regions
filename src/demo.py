@@ -166,30 +166,38 @@ for pathI in paths:
     ##########################################################
     # Find the intersection point of all the lines.
     ##########################################################
+    inter2dLines = []
+    inter2dPts = []
     for i in range(6):
         for j in range(i):
             inter = intersection_point(lines[i], lines[j])
             if type(inter).__module__ == np.__name__:
                 if i < j:
                     # print ('i,j', i,j)
-                    inter2d[(i,j)] = inter
+                    inter2dLines.append((i,j))
+                    inter2dPts.append(inter)
                 else:
-                    # print ('i,j', i,j)
-                    inter2d[(j,i)] = inter
+                    inter2dLines.append((j, i))
+                    inter2dPts.append(inter)
             # inter2d[(j,i)] = inter
 
     print ('lines', lines)
-    print ('inter2d', inter2d)
+    # print ('inter2dLines', inter2dLines)
+    # print ('inter2dPts', inter2dPts)
 
     # remove the intersection points that are same
+            # print('line', i, line)
     # number of resulting points would be six
-    inter2d = rem(inter2d)
-    print ('NEWinter2d', inter2d)
+    inter2dLines, inter2dPts = rem(inter2dLines, inter2dPts)
+    print ('NEWinter2dLines', inter2dLines)
+    print ('NEWinter2dPts', inter2dPts)
 
     # for each point in intersection points, find the 6 arry.
-    pts, ptVectors = ptLocs(inter2d, lines, tol=1e-2)
-    print('pts', pts)
+    ptVectors = ptLocs(inter2dLines, inter2dPts, lines, tol=1e-2)
+    print('pts', inter2dPts)
     print ('ptVectors', ptVectors)
+    for i in range(6):
+        print('line', i, lines[i])
 
     # Now we have a binary 2d array of size 6 (as there are six points of interest
     # and 6 lines with wich we need to find the distance),
@@ -201,7 +209,7 @@ for pathI in paths:
     # this function takes in the 2d 6x6 matrix that we generated and divides the points
     # according to the sign of the multiplications.
 
-    out = label(images[3], pts, ptVectors, lines, tol=1)
+    out = label(images[3], inter2dPts, ptVectors, lines, tol=1)
     plt.imshow(out)
     plt.show()
 

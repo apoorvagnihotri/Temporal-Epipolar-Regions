@@ -178,33 +178,33 @@ def intersection_point(line1, line2):
         inter = None
     return inter
 
-def ptLocs(inter2d, lines, tol=1e-2): 
-    ptDist = np.zeros((6,6)) # will store data for a pt in rows
-    keys = list(inter2d.keys())
+def ptLocs(inter2dLines, inter2dPts, lines, tol=1e-2): 
+    ptVectors = np.zeros((6,6)) # will store data for a pt in rows
     vals = []
-    for j in range(len(keys)):
-        key = keys[j]
-        vals.append(inter2d[key])
-        ipt = inter2d[key]
+    for j in range(len(inter2dLines)):
+        key = inter2dLines[j]
+        ipt = inter2dPts[j]
         for i in range(len(lines)):
             line = lines[i]
-            # print ('shape', line.shape)
-            # print ('iptshape', ipt.shape, ipt[1], ipt)
-            # sys.exit()
             d = line[0]*ipt[0] + line[1]*ipt[1] + line[2]
             if abs(d) < tol:
                 d = 0
-            ptDist[j, i] = d
-    return vals, ptDist
+            ptVectors[j, i] = d
+    return ptVectors
 
-def rem(inter2d):
-    vals = []
-    keys = list(inter2d.keys())
-    for i in range(len(keys)):
-        key = keys[i]
-        if key[0] < 3 and key[1] >= 3:
-            del inter2d[key]
-    return inter2d
+def rem(inter2dLines, inter2dPts):
+    vals_to_del = []
+    for i in range(len(inter2dLines)):
+        interLine = inter2dLines[i]
+        if interLine[0] < 3 and interLine[1] >= 3:
+            vals_to_del.append(i)
+    inter2dLinesCopy = []
+    inter2dPtsCopy = []
+    for i in range(len(inter2dLines)):
+        if i not in vals_to_del:
+            inter2dLinesCopy.append(inter2dLines[i])
+            inter2dPtsCopy.append(inter2dPts[i])
+    return inter2dLinesCopy, inter2dPtsCopy
 
 def label(img, pts, ptVectors, lines, tol=1):
     out = np.copy(img)
