@@ -116,9 +116,22 @@ labels:
  R3(i,j',k') - 4
  R3(i',j',k) - 5
  R3(i',j,k') - 6
+ R4(i',j') - 7
+ R4(j',k') - 9
+ R4(i',k') - 8
+ R5(i,i',k') - 10
+ R5(i,i',j') - 11
+ R5(j,j',i') - 12
+ R5(j,j',k') - 13
+ R5(k,k',i') - 14
+ R5(k,k',j') - 15
 
-@param
-@param
+@param img the original image
+@param pts the 6 distict intersection points
+@param ptVectors the 6x6 array of 6x1 vectors that tell the distance of
+ the intersection points from the epipolar lines.
+@param lines the 3 epipolar lines and 3 parallel lines to them
+@param tol tolerance for making distance = 0 if abs(d) < tol
 '''
 def label(img, pts, ptVectors, lines, tol=1):
     h,w, chl = img.shape
@@ -127,7 +140,7 @@ def label(img, pts, ptVectors, lines, tol=1):
     vector = np.zeros(6)
     for i in range(cols):
         for j in range(rows):
-            la = lebely((j, i), lines, vector, tol)
+            la = ptVec((j, i), lines, vector, tol)
             prodcts = ptVectors*la[None, :]
             ##### labelling of the regions | happens here.
             if np.all(prodcts[0:3,0:3] >= 0):
@@ -144,10 +157,28 @@ def label(img, pts, ptVectors, lines, tol=1):
                 out[i, j] = 5
             elif prodcts[4,1] >= 0 and prodcts[0,3] >= 0 and prodcts[2,5] >= 0:
                 out[i, j] = 6
-
+            elif prodcts[0,3] <= 0 and prodcts[0,4] <= 0:
+                out[i, j] = 7
+            elif prodcts[1,3] <= 0 and prodcts[1,5] <= 0:
+                out[i, j] = 8
+            elif prodcts[2,4] <= 0 and prodcts[2,5] <= 0:
+                out[i, j] = 9
+            elif prodcts[5,0] <= 0 and prodcts[5,3] >= 0 and prodcts[2,4] <= 0:
+                out[i, j] = 10
+            elif prodcts[5,0] <= 0 and prodcts[5,3] >= 0 and prodcts[2,5] <= 0:
+                out[i, j] = 11
+            elif prodcts[4,1] <= 0 and prodcts[4,4] >= 0 and prodcts[1,3] <= 0:
+                out[i, j] = 12
+            elif prodcts[4,1] <= 0 and prodcts[4,4] >= 0 and prodcts[1,5] <= 0:
+                out[i, j] = 13
+            elif prodcts[3,2] <= 0 and prodcts[3,5] >= 0 and prodcts[0,3] <= 0:
+                out[i, j] = 14
+            elif prodcts[3,2] <= 0 and prodcts[3,5] >= 0 and prodcts[0,4] <= 0:
+                out[i, j] = 15
     return out
 
-def lebely(ipt, lines, vector, tol):
+# find the distance vector
+def ptVec(ipt, lines, vector, tol):
     for i in range(len(lines)):
         line = lines[i]
         d = line[0]*ipt[0] + line[1]*ipt[1] + line[2]
@@ -157,9 +188,26 @@ def lebely(ipt, lines, vector, tol):
         vector[i] = d
     return vector
 
-# def highlight_valid_regions(label_img, img, temporal_order):
-#     if temporal_order == 4:
+# given a temporal order, get the corrent regions
+def get_valid_regions(label_img, img, temporal_order):
+    valid_TERS = valid_labels(temporal_order)
+    out = np.copy(img)
+    for i in range(out.shape[0]): # iterate through cols
+        for j in range(out.shape[1]): # iterate through rows
+            label = label_img[i,j] # get the label of the current pixel
+            if label not in valid_TERS:
+                out[i,j] = [0]*img.shape[2]
+    return out
 
-#     elif temporal_order == 3:
-#     elif temporal_order == 2:
-#     elif temporal_order == 1:
+# the lookup table that the paper talks about
+def valid_labels(temporal_order):
+    valid_TERS = None
+    if temporal_order == 1:
+        valid_TERS = [1,2,4,8,9,10,13,15]
+    elif temporal_order == 2:
+        valid_TERS = [0,1,5,6,7,10,11,12]
+    elif temporal_order == 3:
+        valid_TERS = [0,1,4,6,7,13,14,15]
+    elif temporal_order == 4:
+        valid_TERS = [2,3,5,7,9,11,12,14]
+    return valid_TERS

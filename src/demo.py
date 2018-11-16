@@ -78,7 +78,7 @@ for pathI in paths:
             H, S = findFundaMatrixRanSac(n, r, list_kp, t, Tratio) # not working now
         else:
             H, S = cv.findFundamentalMat(np.array(list_kp[1]), np.array(list_kp[0]))
-        Hs.append(H.T)
+        Hs.append(H)
         Ss.append(S)
     print('done Fundamentals')
     print('Fundamental Matrices:', Hs)
@@ -208,20 +208,7 @@ for pathI in paths:
     # this function takes in the 2d 6x6 matrix that we generated and divides the points
     # according to the sign of the multiplications.
 
-    labels = label(images[3], inter2dPts, ptVectors, lines, tol=1)
-    h,w,c = images[3].shape
-    out = images[3] * (np.full((h, w, c), labels[:,:,np.newaxis]) == 6)
+    label_img = label(images[3], inter2dPts, ptVectors, lines, tol=1)
+    out = get_valid_regions(label_img, images[3], temporal_order = 4)
     plt.imshow(out)
     plt.show()
-
-    # we equate the label image that we get to a label that we want to highlight and
-    # highlight that part. 
-
-
-    # make the lookup table
-
-    # given temporal order return valid regions
-
-    # color valid regions
-
-    # exit
