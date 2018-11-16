@@ -13,11 +13,12 @@ import matplotlib.pyplot as plt
 #Reading files
 ##########################################################
 built_in = True # to switch between built-in or custom
-paths = ['I1']
+paths = ['I4']
+ext = 'jpg'
 for pathI in paths:
     path = '../data/normal/' + pathI + '/'
-    imagesNames = ['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg']#, 'e.jpg', 'f.jpg']
-    scale = (0.2, 0.2)
+    imagesNames = ['a.'+ext, 'b.'+ext, 'c.'+ext, 'd.'+ext]#, 'e.jpg', 'f.jpg']
+    scale = (0.4, 0.4)
     images = {} # will have 3 channel color imgs
     imageNos = len(imagesNames)
     m = 3
@@ -86,16 +87,21 @@ for pathI in paths:
     ##########################################################
     # Mannually selecting the interest points on I1, I2, I3
     ##########################################################
-    # Points = {} #I4
-    # Points[0] = np.array([[340, 294]])
-    # Points[1] = np.array([[411, 300]])
-    # Points[2] = np.array([[403, 284]])
-    # Points[3] = np.array([[633, 262]]) # for testing
-    Points = {} #I1
-    Points[0] = np.array([[208, 243]])
-    Points[1] = np.array([[245, 272]])
-    Points[2] = np.array([[434, 223]])
-    Points[3] = np.array([[500, 119]]) # for testing
+    Points = {} #I4
+    Points[0] = np.array([[669, 584]])
+    Points[1] = np.array([[802, 604]])
+    Points[2] = np.array([[791, 563]])
+    Points[3] = np.array([[1258, 522]]) # for testing
+    # Points = {} #I1
+    # Points[0] = np.array([[208, 243]])
+    # Points[1] = np.array([[245, 272]])
+    # Points[2] = np.array([[434, 223]])
+    # Points[3] = np.array([[500, 119]]) # for testing
+    # Points = {} #I2
+    # Points[0] = np.array([[410, 182]])
+    # Points[1] = np.array([[420, 197]])
+    # Points[2] = np.array([[383, 193]])
+    # Points[3] = np.array([[416, 216]]) # for testing
 
 
     ##########################################################
