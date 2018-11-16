@@ -37,109 +37,6 @@ def keyPointMatching(images, imageKeyPoints, imageDescriptors, imgA, imgB, lowsR
     return good
 
 '''
-brief:
-    find the fundamental matrix, such that
-    list_kp[0], transforms to list_kp[1]
-params:
-    n is the number of times to repeat ransac
-    r is the number of points to approximate H(min 4)
-    t is the number of pixels tolerance allowed
-    list_kp is [list1, list2] where list1 and list2 contain
-        the matched keypoints, on the same index, list1 is [(x1,y1),..]
-    Tratio is the ratio of the for which we terminate early.
-'''
-def findFundaMatrixRanSac(n, r, list_kp, t, Tratio):
-    list_kp1 = list_kp[0]
-    list_kp2 = list_kp[1]
-    T = int(Tratio * len(list_kp2))
-
-    Sis = []
-    Sisno = []
-    for i in range(n):
-        list_kp1r = []
-        list_kp2r = []
-        
-        # selecting ramdomly r points
-        for i in range(r):
-            key = np.random.choice(len(list_kp2))
-            list_kp1r.append(list_kp1[key])
-            list_kp2r.append(list_kp2[key])
-        # print (list_kp1r, list_kp2r)
-
-        # find the homo, inlier set
-        P = make_P(list_kp1r, list_kp2r)
-        # print(P)
-        H, Si = findH_Si(P, list_kp, t)
-        Sis.append(Si)
-        # print ('Si:',Si)
-        Sisno.append(len(Si[0]))
-
-        # if majority return with new H
-        if len(Si[0]) >= T:
-            P = make_P(Si[0], Si[1])
-            # print('threashold crossed')
-            # print('P output as:', P)
-            H, Si = findH_Si(P, list_kp, t)
-            # print ('si',Si)
-            return (H, Si)
-
-    # print('Sisno',Sisno)
-    Sisnoi = np.argmax(np.array(Sisno)) # taking the first index 
-                                        # with global max cardinality
-    # print('i', Sisnoi)
-    # print('maxii', Sisno[Sisnoi])
-    Si = Sis[Sisnoi]
-    P = make_P(Si[0], Si[1])
-    H, Si = findH_Si(P, list_kp, t)
-    # print ('si',Si)
-    return (H, Si)
-
-def findH_Si(P, list_kp, t):
-    # print(P.shape)
-    # do svd on P get perlimns H
-    u, s, vh = np.linalg.svd(P, full_matrices=True)
-    H = vh[-1].reshape(3,3) # taking the last singular vector
-    u, s, vh = np.linalg.svd(H, full_matrices=True)
-    s[2] = 0 # assuring that Fundamental matrix calculated is rank 2
-    # print (s)
-    H = s*np.matmul(u, vh)
-    H = H/np.linalg.norm(H)
-    Si = [[],[]]
-
-    # multiply all the matches and find if within tol
-    initialPts = list_kp[0]
-    finalPts = list_kp[1]
-    # print('no of keypts', len(initialPts))
-    for i in range(len(initialPts)):
-        inPt = initialPts[i]
-        fPt = finalPts[i]
-        vi = np.array([[inPt[0]],[inPt[1]], [1]])
-        vi2 = np.array([[fPt[0]],[fPt[1]], [1]]).T
-        temp = np.matmul(H, vi)
-        vf = np.matmul(vi2, temp)
-
-        # check if within some tolerance
-        if np.linalg.norm(vf) <= t:
-            Si[0].append(inPt)
-            Si[1].append(fPt)
-    return (H, Si)
-'''
-I assume that i recieve 2 lists
-'''
-def make_P(list_kp1, list_kp2):
-    k = len(list_kp1)
-    # making P matrix
-    P = np.zeros((k, 9))
-    for i in range(k):
-        # print(list_kp1[int(i/2)])
-        x = list_kp1[int(i/2)][0]
-        x_ = list_kp2[int(i/2)][0]
-        y = list_kp1[int(i/2)][1]
-        y_ = list_kp2[int(i/2)][1]
-        P[i,:] = [x*x_, x*y_, x, y*x_, y*y_, y, x_, y_, 1]
-    return P
-
-'''
 imgwithlines - image on which we draw the epilines
 for the points in img2 lines - corresponding epilines
 https://docs.opencv.org/trunk/da/de9/tutorial_py_epipolar_geometry.html
@@ -187,6 +84,7 @@ def ptLocs(inter2dLines, inter2dPts, lines, tol=1e-2):
         for i in range(len(lines)):
             line = lines[i]
             d = line[0]*ipt[0] + line[1]*ipt[1] + line[2]
+            d = d / (line[0]**2 + line[1]**2)**0.5
             if abs(d) < tol:
                 d = 0
             ptVectors[j, i] = d
@@ -206,24 +104,34 @@ def rem(inter2dLines, inter2dPts):
             inter2dPtsCopy.append(inter2dPts[i])
     return inter2dLinesCopy, inter2dPtsCopy
 
-def label(img, pts, ptVectors, lines, tol=1):
-    out = np.copy(img)
+# temporal order of the images
+def label(img, pts, ptVectors, lines, temp, tol=1):
+    h,w, chl = img.shape
+    out = np.zeros((h,w, chl))
     cols, rows, chl = img.shape
     vector = np.zeros(6)
     for i in range(cols):
         for j in range(rows):
             la = lebely((j, i), lines, vector, tol)
-            # print('shape', ptVectors.shape, la.shape)
-            prodcts = ptVectors*la[:, None]
-            ##### casess sattements here....
-            if np.all(prodcts[0:3,0:3] >= 0):
-                out[i, j] = [0,0,0]
+            prodcts = ptVectors*la[None, :]
+            if temp == 4:
+                ##### labelling of the regions happening here.
+                if np.all(prodcts[0:3,0:3] >= 0):
+                    out[i, j] = [0,0,0]
+                elif np.all(prodcts[0:3,0:2] <= 0) and np.all(prodcts[0:3,2] >= 0):
+                    out[i, j] = [1,1,1]
+                elif np.all(prodcts[0:3,list([0,2])] <= 0) and np.all(prodcts[0:3,1] >= 0):
+                    out[i, j] = [2,2,2]
+                elif np.all(prodcts[0:3][1:3] <= 0) and np.all(prodcts[0:3,0] >= 0):
+                    out[i, j] = [3,3,3]
+
     return out
 
 def lebely(ipt, lines, vector, tol):
     for i in range(len(lines)):
         line = lines[i]
         d = line[0]*ipt[0] + line[1]*ipt[1] + line[2]
+        d = d / (line[0]**2 + line[1]**2)**0.5
         if abs(d) < tol:
                 d = 0
         vector[i] = d

@@ -108,8 +108,8 @@ for pathI in paths:
         lines[i] = lines[i].reshape(-1,3)
         temp, dsf = drawlines(images[3], images[i],
                               lines[i], Points[3], Points[i])
-    plt.imshow(temp)
-    plt.show()
+    # plt.imshow(temp)
+    # plt.show()
 
 
     ##########################################################
@@ -151,8 +151,8 @@ for pathI in paths:
     # print ('newlines:', newlines)
     # printing the newlines on the image
     temp = drawlinesP(temp, newlines)
-    plt.imshow(temp)
-    plt.show()
+    # plt.imshow(temp)
+    # plt.show()
     for i in range(0,2):
         line = newlines[i]
         lines.append([line])
@@ -181,23 +181,22 @@ for pathI in paths:
                     inter2dPts.append(inter)
             # inter2d[(j,i)] = inter
 
-    print ('lines', lines)
     # print ('inter2dLines', inter2dLines)
     # print ('inter2dPts', inter2dPts)
+    # sys.exit()
 
     # remove the intersection points that are same
             # print('line', i, line)
     # number of resulting points would be six
     inter2dLines, inter2dPts = rem(inter2dLines, inter2dPts)
-    print ('NEWinter2dLines', inter2dLines)
-    print ('NEWinter2dPts', inter2dPts)
+    # print ('NEWinter2dLines', inter2dLines)
+    # print ('NEWinter2dPts', inter2dPts)
+    # sys.exit()
 
     # for each point in intersection points, find the 6 arry.
     ptVectors = ptLocs(inter2dLines, inter2dPts, lines, tol=1e-2)
-    print('pts', inter2dPts)
-    print ('ptVectors', ptVectors)
-    for i in range(6):
-        print('line', i, lines[i])
+    # print('pts', inter2dPts)
+    # print ('ptVectors', ptVectors)
 
     # Now we have a binary 2d array of size 6 (as there are six points of interest
     # and 6 lines with wich we need to find the distance),
@@ -209,14 +208,14 @@ for pathI in paths:
     # this function takes in the 2d 6x6 matrix that we generated and divides the points
     # according to the sign of the multiplications.
 
-    out = label(images[3], inter2dPts, ptVectors, lines, tol=1)
+    labels = label(images[3], inter2dPts, ptVectors, lines, temp = 4, tol=1)
+    out = images[3] * (labels == 2)
     plt.imshow(out)
     plt.show()
 
     # we equate the label image that we get to a label that we want to highlight and
     # highlight that part. 
 
-    sys.exit()
 
     # make the lookup table
 
