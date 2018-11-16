@@ -12,13 +12,16 @@ import matplotlib.pyplot as plt
 ##########################################################
 #Reading files
 ##########################################################
-built_in = True # to switch between built-in or custom
-paths = ['I4']
+paths = ['I2'] # valid options here, I1, I2, I3, I4
 ext = 'jpg'
 for pathI in paths:
+    if pathI in ['I2', 'I3']:
+        ext = 'png'
     path = '../data/normal/' + pathI + '/'
     imagesNames = ['a.'+ext, 'b.'+ext, 'c.'+ext, 'd.'+ext]#, 'e.jpg', 'f.jpg']
-    scale = (0.4, 0.4)
+    scale = (0.2, 0.2)
+    if pathI in ['I4', 'I2', 'I3']:
+        scale = (0.4, 0.4)
     images = {} # will have 3 channel color imgs
     imageNos = len(imagesNames)
     m = 3
@@ -74,12 +77,8 @@ for pathI in paths:
         imgA = i
         imgB = 3 # we want fundamental matrices w.r.t. 4th image only
         list_kp = goodMatchings[(imgA, imgB)]
-        # finding the fundamental matrices, using ransac
-        if (not built_in):
-            H, S = findFundaMatrixRanSac(n, r, list_kp, t, Tratio) # not working now
-        else:
-            H, S = cv.findFundamentalMat(np.array(list_kp[1]), np.array(list_kp[0]))
-        Hs.append(H)
+        H, S = cv.findFundamentalMat(np.array(list_kp[1]), np.array(list_kp[0]))
+        Hs.append(H.T)
         Ss.append(S)
     print('done Fundamentals')
     print('Fundamental Matrices:', Hs)
@@ -88,21 +87,26 @@ for pathI in paths:
     # Mannually selecting the interest points on I1, I2, I3
     ##########################################################
     Points = {} #I4
-    Points[0] = np.array([[669, 584]])
-    Points[1] = np.array([[802, 604]])
-    Points[2] = np.array([[791, 563]])
-    Points[3] = np.array([[1258, 522]]) # for testing
-    # Points = {} #I1
-    # Points[0] = np.array([[208, 243]])
-    # Points[1] = np.array([[245, 272]])
-    # Points[2] = np.array([[434, 223]])
-    # Points[3] = np.array([[500, 119]]) # for testing
-    # Points = {} #I2
-    # Points[0] = np.array([[410, 182]])
-    # Points[1] = np.array([[420, 197]])
-    # Points[2] = np.array([[383, 193]])
-    # Points[3] = np.array([[416, 216]]) # for testing
-
+    if pathI == 'I4':
+        Points[0] = np.array([[669, 584]])
+        Points[1] = np.array([[802, 604]])
+        Points[2] = np.array([[791, 563]])
+        Points[3] = np.array([[1258, 522]]) # for testing
+    elif pathI == 'I2':
+        Points[0] = np.array([[410, 182]])
+        Points[1] = np.array([[420, 197]])
+        Points[2] = np.array([[383, 193]])
+        Points[3] = np.array([[416, 216]]) # for testing
+    elif pathI == 'I1':
+        Points[0] = np.array([[207, 242]])
+        Points[1] = np.array([[243, 272]])
+        Points[2] = np.array([[434, 225]])
+        Points[3] = np.array([[500, 116]]) # for testing
+    elif pathI == 'I3':
+        Points[0] = np.array([[366, 85]])
+        Points[1] = np.array([[381, 84]])
+        Points[2] = np.array([[389, 83]])
+        Points[3] = np.array([[479, 74]]) # for testing
 
     ##########################################################
     # Find the epipolar lines on I4, and draw them
@@ -218,3 +222,4 @@ for pathI in paths:
     out = get_valid_regions(label_img, images[3], temporal_order = 4)
     plt.imshow(out)
     plt.show()
+    cv.imwrite('../result/'+pathI+'out.jpg', out)
