@@ -104,26 +104,46 @@ def rem(inter2dLines, inter2dPts):
             inter2dPtsCopy.append(inter2dPts[i])
     return inter2dLinesCopy, inter2dPtsCopy
 
-# temporal order of the images
-def label(img, pts, ptVectors, lines, temp, tol=1):
+'''
+brief: outputs an label_img, that marks the temporal epipolar regions
+ acoording to the label given below. Please refer the paper to know what
+ LHS corresponds
+labels:
+ R1(i,j,k) - 0
+ R2(i,j) - 1
+ R2(i,k) - 2
+ R2(j,k) - 3
+ R3(i,j',k') - 4
+ R3(i',j',k) - 5
+ R3(i',j,k') - 6
+
+@param
+@param
+'''
+def label(img, pts, ptVectors, lines, tol=1):
     h,w, chl = img.shape
-    out = np.zeros((h,w, chl))
+    out = np.zeros((h,w))
     cols, rows, chl = img.shape
     vector = np.zeros(6)
     for i in range(cols):
         for j in range(rows):
             la = lebely((j, i), lines, vector, tol)
             prodcts = ptVectors*la[None, :]
-            if temp == 4:
-                ##### labelling of the regions happening here.
-                if np.all(prodcts[0:3,0:3] >= 0):
-                    out[i, j] = [0,0,0]
-                elif np.all(prodcts[0:3,0:2] <= 0) and np.all(prodcts[0:3,2] >= 0):
-                    out[i, j] = [1,1,1]
-                elif np.all(prodcts[0:3,list([0,2])] <= 0) and np.all(prodcts[0:3,1] >= 0):
-                    out[i, j] = [2,2,2]
-                elif np.all(prodcts[0:3][1:3] <= 0) and np.all(prodcts[0:3,0] >= 0):
-                    out[i, j] = [3,3,3]
+            ##### labelling of the regions | happens here.
+            if np.all(prodcts[0:3,0:3] >= 0):
+                out[i, j] = 0
+            elif np.all(prodcts[0:3,0:2] <= 0) and np.all(prodcts[0:3,2] >= 0):
+                out[i, j] = 1
+            elif np.all(prodcts[0:3,list([0,2])] <= 0) and np.all(prodcts[0:3,1] >= 0):
+                out[i, j] = 2
+            elif np.all(prodcts[0:3][1:3] <= 0) and np.all(prodcts[0:3,0] >= 0):
+                out[i, j] = 3
+            elif prodcts[5,0] >= 0 and prodcts[0,4] >= 0 and prodcts[1,5] >= 0:
+                out[i, j] = 4
+            elif prodcts[3,2] >= 0 and prodcts[1,3] >= 0 and prodcts[2,4] >= 0:
+                out[i, j] = 5
+            elif prodcts[4,1] >= 0 and prodcts[0,3] >= 0 and prodcts[2,5] >= 0:
+                out[i, j] = 6
 
     return out
 
@@ -136,3 +156,10 @@ def lebely(ipt, lines, vector, tol):
                 d = 0
         vector[i] = d
     return vector
+
+# def highlight_valid_regions(label_img, img, temporal_order):
+#     if temporal_order == 4:
+
+#     elif temporal_order == 3:
+#     elif temporal_order == 2:
+#     elif temporal_order == 1:

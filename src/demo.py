@@ -208,8 +208,9 @@ for pathI in paths:
     # this function takes in the 2d 6x6 matrix that we generated and divides the points
     # according to the sign of the multiplications.
 
-    labels = label(images[3], inter2dPts, ptVectors, lines, temp = 4, tol=1)
-    out = images[3] * (labels == 2)
+    labels = label(images[3], inter2dPts, ptVectors, lines, tol=1)
+    h,w,c = images[3].shape
+    out = images[3] * (np.full((h, w, c), labels[:,:,np.newaxis]) == 6)
     plt.imshow(out)
     plt.show()
 
