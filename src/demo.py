@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 ##########################################################
 #Reading files
 ##########################################################
-paths = ['I2'] # valid options here, I1, I2, I3, I4
+paths = ['I1'] # valid options here, I1, I2, I3
 ext = 'jpg'
 for pathI in paths:
     if pathI in ['I2', 'I3']:
@@ -20,7 +20,7 @@ for pathI in paths:
     path = '../data/normal/' + pathI + '/'
     imagesNames = ['a.'+ext, 'b.'+ext, 'c.'+ext, 'd.'+ext]#, 'e.jpg', 'f.jpg']
     scale = (0.2, 0.2)
-    if pathI in ['I4', 'I2', 'I3']:
+    if pathI in ['I2', 'I3']:
         scale = (0.4, 0.4)
     images = {} # will have 3 channel color imgs
     imageNos = len(imagesNames)
@@ -78,21 +78,16 @@ for pathI in paths:
         imgB = 3 # we want fundamental matrices w.r.t. 4th image only
         list_kp = goodMatchings[(imgA, imgB)]
         H, S = cv.findFundamentalMat(np.array(list_kp[1]), np.array(list_kp[0]))
-        Hs.append(H.T)
+        Hs.append(H)
         Ss.append(S)
     print('done Fundamentals')
     print('Fundamental Matrices:', Hs)
 
     ##########################################################
-    # Mannually selecting the interest points on I1, I2, I3
+    # Mannually selecting the interest points on I1, I2, I3, I4
     ##########################################################
-    Points = {} #I4
-    if pathI == 'I4':
-        Points[0] = np.array([[669, 584]])
-        Points[1] = np.array([[802, 604]])
-        Points[2] = np.array([[791, 563]])
-        Points[3] = np.array([[1258, 522]]) # for testing
-    elif pathI == 'I2':
+    Points = {}
+    if pathI == 'I2':
         Points[0] = np.array([[410, 182]])
         Points[1] = np.array([[420, 197]])
         Points[2] = np.array([[383, 193]])
@@ -109,7 +104,8 @@ for pathI in paths:
         Points[3] = np.array([[479, 74]]) # for testing
 
     ##########################################################
-    # Find the epipolar lines on I4, and draw them
+    # Find the epipolar lines on I4, and draw them (assuming temporal order is 4)
+    print('finding epipolar lines')
     ##########################################################
     lines = [] # lines[0,1,2]
     for i in range(3):
@@ -118,9 +114,7 @@ for pathI in paths:
         lines[i] = lines[i].reshape(-1,3)
         temp, dsf = drawlines(images[3], images[i],
                               lines[i], Points[3], Points[i])
-    # plt.imshow(temp)
-    # plt.show()
-
+    print('epipolar lines calulated')
 
     ##########################################################
     # Find the intersections of epipolar lines
@@ -138,44 +132,39 @@ for pathI in paths:
             inter2d[(i, j)] = inter
         else:
             inter2d[(j, i)] = inter
-    # print ('intersection points:', intersection)
-    # print ('inter2d points:', inter2d)
 
     ##########################################################
     # find the equations of the parrellel lines
     ##########################################################
     # line parallel to lines[0] would be in newlines[0]
+    print('finding parallel epipolar lines')
     newlines = {} # list of lines
-    # print (lines)
     for i in range(-1,2):
         inx = -1*((2*i)+1) # custom index
         if inx == -3:
             inx = 0
         xy = intersection[i] # getting the correct intersection point
-        # print('xy',xy)
         c =  -(lines[inx][0][1]*xy[1,0] + lines[inx][0][0]*xy[0,0])
         newlines[inx] = [lines[inx][0][0]]
         newlines[inx].append(lines[inx][0][1])
         newlines[inx].append(c)
-    # print ('oldlines:', lines)
-    # print ('newlines:', newlines)
     # printing the newlines on the image
     temp = drawlinesP(temp, newlines)
-    # plt.imshow(temp)
-    # plt.show()
+    plt.imshow(temp)
+    plt.show()
     for i in range(0,2):
         line = newlines[i]
         lines.append([line])
 
     lines.append([newlines[-1]])
-    # print ('lines', np.array(lines).shape)
     lines = np.squeeze(np.array(lines), axis=1)
-    # print ('lines', lines)
+    print('parallel epipolar lines calulated')
 
 
     ##########################################################
     # Find the intersection point of all the lines.
     ##########################################################
+    print('finding intersection points')
     inter2dLines = []
     inter2dPts = []
     for i in range(6):
@@ -183,43 +172,29 @@ for pathI in paths:
             inter = intersection_point(lines[i], lines[j])
             if type(inter).__module__ == np.__name__:
                 if i < j:
-                    # print ('i,j', i,j)
                     inter2dLines.append((i,j))
                     inter2dPts.append(inter)
                 else:
                     inter2dLines.append((j, i))
                     inter2dPts.append(inter)
-            # inter2d[(j,i)] = inter
 
-    # print ('inter2dLines', inter2dLines)
-    # print ('inter2dPts', inter2dPts)
-    # sys.exit()
-
-    # remove the intersection points that are same
-            # print('line', i, line)
-    # number of resulting points would be six
+    # remove the duplicate intersection points
     inter2dLines, inter2dPts = rem(inter2dLines, inter2dPts)
-    # print ('NEWinter2dLines', inter2dLines)
-    # print ('NEWinter2dPts', inter2dPts)
-    # sys.exit()
+    print('intersection points calulated')
 
-    # for each point in intersection points, find the 6 arry.
+    # for each point in intersection points, find the 6x6 arry denoting dist frm lines.
     ptVectors = ptLocs(inter2dLines, inter2dPts, lines, tol=1e-2)
-    # print('pts', inter2dPts)
-    # print ('ptVectors', ptVectors)
 
-    # Now we have a binary 2d array of size 6 (as there are six points of interest
-    # and 6 lines with wich we need to find the distance),
-    # which would denote the distance value of each intersection point, we take in 
-    # threashold which would help us allow some tardiness.
-
-    # We now define a function that returns the label of a point, given the temporal order.
-    # and the image. For now we only have one case of temporal order supported.
-    # this function takes in the 2d 6x6 matrix that we generated and divides the points
-    # according to the sign of the multiplications.
-
+    # function that returns the label of a point.
+    print('finding labellings')
     label_img = label(images[3], inter2dPts, ptVectors, lines, tol=1)
+    print('done labellings')
+    # get the valid regions according to the temporal order of the images
+    print('printing valid regions')
     out = get_valid_regions(label_img, images[3], temporal_order = 4)
     plt.imshow(out)
     plt.show()
     cv.imwrite('../result/'+pathI+'out.jpg', out)
+    print('check', '../result/'+pathI+'out.jpg')
+
+sys.exit()
